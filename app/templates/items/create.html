@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1>Registrar Nuevo Ítem</h1>
+        
+        <form method="POST" action="/items/create">
+            <div class="mb-3">
+                <label for="brand" class="form-label">Marca</label>
+                <input type="text" class="form-control" id="brand" name="brand" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="model" class="form-label">Modelo</label>
+                <input type="text" class="form-control" id="model" name="model" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="item_type" class="form-label">Tipo</label>
+                <select class="form-select" id="item_type" name="item_type" required>
+                    <option value="">Seleccione un tipo</option>
+                    {% for type in item_types %}
+                    <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="serial_number" class="form-label">Número de Serie</label>
+                <input type="text" class="form-control" id="serial_number" name="serial_number" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="purchase_date" class="form-label">Fecha de Compra</label>
+                <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="warranty_end_date" class="form-label">Fecha Fin de Garantía</label>
+                <input type="date" class="form-control" id="warranty_end_date" name="warranty_end_date">
+            </div>
+            
+            <div class="mb-3">
+                <label for="supplier" class="form-label">Proveedor</label>
+                <input type="text" class="form-control" id="supplier" name="supplier" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="location_id" class="form-label">Ubicación</label>
+                <select class="form-select" id="location_id" name="location_id" required>
+                    <option value="">Seleccione una ubicación</option>
+                    {% for location in locations %}
+                    <option value="{{ location.id }}">{{ location.name }} - {{ location.company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="/items" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

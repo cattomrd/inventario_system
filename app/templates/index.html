@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Dashboard - Sistema de Inventario IT</h1>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">Total de Ítems</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ items_count }}</h5>
+                <p class="card-text">Equipos registrados en el sistema</p>
+                <a href="/items" class="btn btn-light">Ver todos</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Usuarios</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ users_count }}</h5>
+                <p class="card-text">Usuarios registrados</p>
+                <a href="/users" class="btn btn-light">Ver todos</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Asignaciones Activas</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ active_assignments }}</h5>
+                <p class="card-text">Equipos asignados actualmente</p>
+                <a href="/assignments" class="btn btn-light">Ver todas</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h2>Acciones Rápidas</h2>
+        <div class="list-group">
+            <a href="/items/create" class="list-group-item list-group-item-action">
+                ➕ Registrar nuevo ítem
+            </a>
+            <a href="/companies/create" class="list-group-item list-group-item-action">
+                🏢 Agregar empresa
+            </a>
+            <a href="/users/create" class="list-group-item list-group-item-action">
+                👤 Registrar usuario
+            </a>
+            <a href="/assignments/create" class="list-group-item list-group-item-action">
+                📋 Asignar equipo
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
