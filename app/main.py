@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from models import models
 from models.database import engine, Base, get_db
 from routers import items, companies, departments, locations, users, assignments
+import uvicorn
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -39,4 +40,5 @@ async def root(request: Request, db: Session = Depends(get_db)):
         }
     )
 
-######
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
