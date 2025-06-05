@@ -38,3 +38,5 @@ async def root(request: Request, db: Session = Depends(get_db)):
             "active_assignments": active_assignments
         }
     )
+
+######
