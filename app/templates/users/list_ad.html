@@ -1,0 +1,165 @@
+<!-- app/templates/users/list_ad.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Usuarios - Active Directory</h1>
+            <div>
+                <a href="/users?source=local" class="btn btn-outline-primary">Ver Usuarios Locales</a>
+                <a href="/users/export" class="btn btn-success">📤 Exportar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario de búsqueda -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="/users" class="row g-3">
+                    <input type="hidden" name="source" value="ad">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Buscar por nombre, usuario, email..." 
+                               value="{{ search_term or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary">🔍 Buscar</button>
+                        <a href="/users/test-ad-connection" class="btn btn-outline-info">Test AD</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultados -->
+<div class="row">
+    <div class="col-12">
+        {% if users %}
+        <div class="alert alert-info">
+            Se encontraron {{ users|length }} usuarios en Active Directory
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Nombre Completo</th>
+                        <th>Email</th>
+                        <th>Departamento</th>
+                        <th>Título</th>
+                        <th>Oficina</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td><strong>{{ user.username }}</strong></td>
+                        <td>{{ user.display_name or (user.first_name ~ ' ' ~ user.last_name) }}</td>
+                        <td>{{ user.email or '-' }}</td>
+                        <td>{{ user.department or '-' }}</td>
+                        <td>{{ user.title or '-' }}</td>
+                        <td>{{ user.office or '-' }}</td>
+                        <td>
+                            <a href="/users/ad-user/{{ user.username }}" class="btn btn-sm btn-info">👤 Ver</a>
+                            <button type="button" class="btn btn-sm btn-success" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#importModal"
+                                    data-username="{{ user.username }}"
+                                    data-display-name="{{ user.display_name }}">
+                                📥 Importar
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            {% if search_term %}
+                No se encontraron usuarios que coincidan con "{{ search_term }}"
+            {% else %}
+                No se encontraron usuarios en Active Directory
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para importar usuario -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Importar Usuario a Base Local</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/users/import-from-ad">
+                <div class="modal-body">
+                    <input type="hidden" id="import-username" name="username">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario seleccionado:</label>
+                        <p id="import-display-name" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department_id" class="form-label">Departamento</label>
+                        <select class="form-select" id="department_id" name="department_id" required>
+                            <option value="">Seleccione un departamento</option>
+                            <!-- Se poblará dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Importar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejar modal de importación
+    const importModal = document.getElementById('importModal');
+    importModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const username = button.getAttribute('data-username');
+        const displayName = button.getAttribute('data-display-name');
+        
+        document.getElementById('import-username').value = username;
+        document.getElementById('import-display-name').textContent = displayName;
+        
+        // Cargar departamentos
+        loadDepartments();
+    });
+    
+    async function loadDepartments() {
+        try {
+            const response = await fetch('/departments/api/all');
+            const departments = await response.json();
+            
+            const select = document.getElementById('department_id');
+            select.innerHTML = '<option value="">Seleccione un departamento</option>';
+            
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.id;
+                option.textContent = `${dept.name} - ${dept.company.name}`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading departments:', error);
+        }
+    }
+});
+</script>
+
+{% endblock %}

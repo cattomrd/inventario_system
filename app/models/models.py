@@ -12,6 +12,13 @@ class ItemType(str, enum.Enum):
     TABLET = "tablet"
     MONITOR = "monitor"
     ROUTER = "router"
+    SWITCH = "switch"
+    SERVER = "server"
+    ACCESSORY = "accessory"
+    PERIPHERAL = "peripheral"  
+    CAMERA = "camera"
+    STORAGE = "storage"
+    NETWORK = "network"
     OTHER = "other"
 
 class Company(Base):

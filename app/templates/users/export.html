@@ -1,0 +1,83 @@
+<!-- app/templates/users/export.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1>Exportar Usuarios</h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <h4>Configurar Exportación</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/users/export">
+                    <div class="mb-3">
+                        <label for="source" class="form-label">Origen de Datos</label>
+                        <select class="form-select" id="source" name="source" required>
+                            <option value="local">Base de Datos Local</option>
+                            <option value="ad">Active Directory</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="format" class="form-label">Formato de Exportación</label>
+                        <select class="form-select" id="format" name="format" required>
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="json">JSON (.json)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="search_term" class="form-label">Filtro de Búsqueda (opcional)</label>
+                        <input type="text" class="form-control" id="search_term" name="search_term" 
+                               placeholder="Buscar por nombre, email, departamento...">
+                        <div class="form-text">Deje vacío para exportar todos los usuarios</div>
+                    </div>
+                    
+                    <div id="ad-options" class="mb-3" style="display: none;">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include_groups" name="include_groups">
+                            <label class="form-check-label" for="include_groups">
+                                Incluir grupos de seguridad (solo para AD)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            📤 Generar Exportación
+                        </button>
+                        <a href="/users" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Información sobre los formatos</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><strong>Excel:</strong> Ideal para análisis de datos y presentaciones. Incluye formato y es fácil de abrir en Microsoft Excel.</li>
+                    <li><strong>CSV:</strong> Formato universal compatible con cualquier sistema. Ideal para importaciones masivas.</li>
+                    <li><strong>JSON:</strong> Formato estructurado ideal para desarrolladores y sistemas automatizados.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('source').addEventListener('change', function() {
+    const adOptions = document.getElementById('ad-options');
+    if (this.value === 'ad') {
+        adOptions.style.display = 'block';
+    } else {
+        adOptions.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

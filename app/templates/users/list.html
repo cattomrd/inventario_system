@@ -1,43 +1,85 @@
-<!-- app/templates/users/list.html -->
+<!-- app/templates/users/list.html - Actualizada -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h1>Usuarios</h1>
-        <a href="/users/create" class="btn btn-primary mb-3">Agregar Nuevo Usuario</a>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Usuarios - Base Local</h1>
+            <div>
+                <a href="/users?source=ad" class="btn btn-outline-primary">Ver Active Directory</a>
+                <a href="/users/create" class="btn btn-primary">Agregar Nuevo Usuario</a>
+                <a href="/users/export" class="btn btn-success">📤 Exportar</a>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Formulario de búsqueda -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="/users" class="row g-3">
+                    <input type="hidden" name="source" value="local">
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Buscar por nombre o email..." 
+                               value="{{ search_term or '' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">🔍 Buscar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de usuarios -->
 <div class="row">
     <div class="col-12">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre Completo</th>
-                    <th>Email</th>
-                    <th>Departamento</th>
-                    <th>Empresa</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.full_name }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.department.name if user.department else 'N/A' }}</td>
-                    <td>{{ user.department.company.name if user.department else 'N/A' }}</td>
-                    <td>
-                        <a href="/users/{{ user.id }}" class="btn btn-sm btn-info">Ver</a>
-                        <a href="/users/{{ user.id }}/edit" class="btn btn-sm btn-warning">Editar</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if users %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre Completo</th>
+                        <th>Email</th>
+                        <th>Departamento</th>
+                        <th>Empresa</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.full_name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.department.name if user.department else 'N/A' }}</td>
+                        <td>{{ user.department.company.name if user.department else 'N/A' }}</td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="/users/{{ user.id }}" class="btn btn-sm btn-info">Ver</a>
+                            <a href="/users/{{ user.id }}/edit" class="btn btn-sm btn-warning">Editar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            {% if search_term %}
+                No se encontraron usuarios que coincidan con "{{ search_term }}"
+            {% else %}
+                No hay usuarios registrados en la base local
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

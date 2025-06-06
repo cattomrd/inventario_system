@@ -93,3 +93,42 @@ class Assignment(AssignmentBase):
     
     class Config:
         from_attributes = True
+
+
+from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional, List
+
+class ADUserBase(BaseModel):
+    username: str
+    display_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    department: Optional[str] = None
+    title: Optional[str] = None
+    phone: Optional[str] = None
+    mobile: Optional[str] = None
+    office: Optional[str] = None
+    company: Optional[str] = None
+    manager: Optional[str] = None
+    employee_id: Optional[str] = None
+
+class ADUser(ADUserBase):
+    created_date: Optional[datetime] = None
+    last_logon: Optional[datetime] = None
+    dn: str
+    groups: Optional[List[str]] = None
+    
+    class Config:
+        from_attributes = True
+
+class UserSearchRequest(BaseModel):
+    search_term: Optional[str] = ""
+    max_results: Optional[int] = 100
+    include_groups: Optional[bool] = False
+
+class ExportRequest(BaseModel):
+    format: str  # 'excel', 'csv', 'json'
+    search_term: Optional[str] = ""
+    include_groups: Optional[bool] = False

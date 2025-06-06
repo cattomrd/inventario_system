@@ -1,0 +1,180 @@
+<!-- app/templates/users/ad_detail.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ user.display_name }}</h1>
+            <a href="/users?source=ad" class="btn btn-secondary">← Volver</a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Información Personal</h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Usuario:</dt>
+                    <dd class="col-sm-9"><code>{{ user.username }}</code></dd>
+                    
+                    <dt class="col-sm-3">Nombre:</dt>
+                    <dd class="col-sm-9">{{ user.first_name }} {{ user.last_name }}</dd>
+                    
+                    <dt class="col-sm-3">Email:</dt>
+                    <dd class="col-sm-9">{{ user.email or 'No disponible' }}</dd>
+                    
+                    <dt class="col-sm-3">Departamento:</dt>
+                    <dd class="col-sm-9">{{ user.department or 'No especificado' }}</dd>
+                    
+                    <dt class="col-sm-3">Título:</dt>
+                    <dd class="col-sm-9">{{ user.title or 'No especificado' }}</dd>
+                    
+                    <dt class="col-sm-3">Teléfono:</dt>
+                    <dd class="col-sm-9">{{ user.phone or 'No disponible' }}</dd>
+                    
+                    <dt class="col-sm-3">Móvil:</dt>
+                    <dd class="col-sm-9">{{ user.mobile or 'No disponible' }}</dd>
+                    
+                    <dt class="col-sm-3">Oficina:</dt>
+                    <dd class="col-sm-9">{{ user.office or 'No especificada' }}</dd>
+                    
+                    <dt class="col-sm-3">Compañía:</dt>
+                    <dd class="col-sm-9">{{ user.company or 'No especificada' }}</dd>
+                    
+                    <dt class="col-sm-3">Manager:</dt>
+                    <dd class="col-sm-9">{{ user.manager or 'No especificado' }}</dd>
+                    
+                    <dt class="col-sm-3">ID Empleado:</dt>
+                    <dd class="col-sm-9">{{ user.employee_id or 'No disponible' }}</dd>
+                    
+                    {% if user.created_date %}
+                    <dt class="col-sm-3">Fecha Creación:</dt>
+                    <dd class="col-sm-9">{{ user.created_date.strftime('%Y-%m-%d %H:%M') if user.created_date else 'No disponible' }}</dd>
+                    {% endif %}
+                    
+                    {% if user.last_logon %}
+                    <dt class="col-sm-3">Último Login:</dt>
+                    <dd class="col-sm-9">{{ user.last_logon.strftime('%Y-%m-%d %H:%M') if user.last_logon else 'No disponible' }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Grupos de Seguridad</h4>
+            </div>
+            <div class="card-body">
+                {% if user.groups %}
+                <div class="list-group">
+                    {% for group in user.groups %}
+                    <div class="list-group-item">
+                        <i class="fas fa-users"></i> {{ group }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No se encontraron grupos asignados</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Acciones</h4>
+            </div>
+            <div class="card-body">
+                <button type="button" class="btn btn-success w-100 mb-2" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#importModal">
+                    📥 Importar a Base Local
+                </button>
+                <button type="button" class="btn btn-info w-100" onclick="exportUser()">
+                    📤 Exportar Información
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para importar usuario -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Importar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/users/import-from-ad">
+                <div class="modal-body">
+                    <input type="hidden" name="username" value="{{ user.username }}">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario:</label>
+                        <p class="form-control-plaintext">{{ user.display_name }} ({{ user.username }})</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department_id" class="form-label">Departamento</label>
+                        <select class="form-select" id="department_id" name="department_id" required>
+                            <option value="">Seleccione un departamento</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportUser() {
+    const userData = {
+        username: "{{ user.username }}",
+        display_name: "{{ user.display_name }}",
+        email: "{{ user.email }}",
+        department: "{{ user.department }}",
+        title: "{{ user.title }}",
+        phone: "{{ user.phone }}",
+        mobile: "{{ user.mobile }}",
+        office: "{{ user.office }}",
+        company: "{{ user.company }}",
+        groups: {{ user.groups | tojson if user.groups else '[]' }}
+    };
+    
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `usuario_${userData.username}.json`;
+    link.click();
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Cargar departamentos para el modal
+    try {
+        const response = await fetch('/departments/api/all');
+        const departments = await response.json();
+        
+        const select = document.getElementById('department_id');
+        departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept.id;
+            option.textContent = `${dept.name} - ${dept.company.name}`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading departments:', error);
+    }
+});
+</script>
+{% endblock %}
