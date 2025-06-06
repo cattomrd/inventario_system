@@ -1,47 +1,138 @@
-# app/routers/users.py - Versión actualizada con AD
+# app/routers/users.py - Router corregido con imports apropiados
+
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
-import datetime
 from typing import Optional
 import io
+from datetime import datetime
 
+# Imports del proyecto
 from models import crud, models, schemas
 from models.database import get_db
-from services.add_service import ActiveDirectoryService
-from services.export_service import ExportService
+
+# Import del servicio AD con manejo de errores
+try:
+    from services.ad_service import ActiveDirectoryService
+    AD_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import ActiveDirectoryService: {e}")
+    AD_AVAILABLE = False
+    ActiveDirectoryService = None
+
+# Import del servicio de export con manejo de errores  
+try:
+    from services.export_service import ExportService
+    EXPORT_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import ExportService: {e}")
+    EXPORT_AVAILABLE = False
+    ExportService = None
 
 router = APIRouter()
 templates = Jinja2Templates(directory="../app/templates")
 
-# Instancia del servicio de AD
-ad_service = ActiveDirectoryService()
-export_service = ExportService()
+# Instanciar servicios solo si están disponibles
+if AD_AVAILABLE:
+    try:
+        ad_service = ActiveDirectoryService()
+    except Exception as e:
+        print(f"Warning: Could not initialize AD service: {e}")
+        ad_service = None
+        AD_AVAILABLE = False
+else:
+    ad_service = None
+
+if EXPORT_AVAILABLE:
+    try:
+        export_service = ExportService()
+    except Exception as e:
+        print(f"Warning: Could not initialize Export service: {e}")
+        export_service = None
+        EXPORT_AVAILABLE = False
+else:
+    export_service = None
 
 @router.get("/", response_class=HTMLResponse)
 async def list_users(
     request: Request, 
     search: Optional[str] = Query(None),
-    source: Optional[str] = Query("local"),  # "local" o "ad"
+    source: Optional[str] = Query("local"),
     db: Session = Depends(get_db)
 ):
     """Lista usuarios desde base local o Active Directory"""
     
     if source == "ad":
+        # Verificar si AD está disponible
+        if not AD_AVAILABLE or not ad_service:
+            return templates.TemplateResponse(
+                "users/list_ad.html",
+                {
+                    "request": request, 
+                    "users": [],
+                    "search_term": search or "",
+                    "source": "ad",
+                    "error": "Active Directory no está configurado o disponible",
+                    "config_error": True
+                }
+            )
+        
+        # Verificar configuración antes de intentar buscar
+        try:
+            config_status = ad_service.get_config_status()
+            if config_status["status"] == "invalid":
+                return templates.TemplateResponse(
+                    "users/list_ad.html",
+                    {
+                        "request": request, 
+                        "users": [],
+                        "search_term": search or "",
+                        "source": "ad",
+                        "error": f"Configuración de AD inválida: {config_status['error']}",
+                        "config_error": True
+                    }
+                )
+        except Exception as e:
+            return templates.TemplateResponse(
+                "users/list_ad.html",
+                {
+                    "request": request, 
+                    "users": [],
+                    "search_term": search or "",
+                    "source": "ad",
+                    "error": f"Error al verificar configuración: {str(e)}",
+                    "config_error": True
+                }
+            )
+        
         # Buscar en Active Directory
         search_term = search if search else ""
-        ad_users = ad_service.search_users(search_term, max_results=200)
-        
-        return templates.TemplateResponse(
-            "users/list_ad.html",
-            {
-                "request": request, 
-                "users": ad_users,
-                "search_term": search_term,
-                "source": "ad"
-            }
-        )
+        try:
+            ad_users = ad_service.search_users(search_term, max_results=200)
+            
+            return templates.TemplateResponse(
+                "users/list_ad.html",
+                {
+                    "request": request, 
+                    "users": ad_users,
+                    "search_term": search_term,
+                    "source": "ad",
+                    "config_status": config_status
+                }
+            )
+        except Exception as e:
+            return templates.TemplateResponse(
+                "users/list_ad.html",
+                {
+                    "request": request, 
+                    "users": [],
+                    "search_term": search_term,
+                    "source": "ad",
+                    "error": f"Error al buscar usuarios: {str(e)}",
+                    "search_error": True
+                }
+            )
     else:
         # Buscar en base local (comportamiento original)
         users = crud.get_users(db)
@@ -58,193 +149,90 @@ async def list_users(
             }
         )
 
-@router.get("/ad-search", response_class=HTMLResponse)
-async def ad_search_form(request: Request):
-    """Formulario de búsqueda en Active Directory"""
-    return templates.TemplateResponse(
-        "users/ad_search.html",
-        {"request": request}
-    )
+@router.get("/test-ad-connection")
+async def test_ad_connection():
+    """Probar conexión con Active Directory"""
+    if not AD_AVAILABLE or not ad_service:
+        return {
+            "success": False,
+            "error": "Active Directory service not available",
+            "details": "Check if AD service is properly configured and imported"
+        }
+    
+    try:
+        result = ad_service.test_connection()
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Unexpected error: {str(e)}",
+            "details": "Check logs for more information"
+        }
 
-@router.post("/ad-search")
-async def ad_search_users(
-    request: Request,
-    search_term: str = Form(""),
-    max_results: int = Form(100),
-    include_groups: bool = Form(False)
-):
-    """Buscar usuarios en Active Directory"""
+@router.get("/ad-config-status")
+async def get_ad_config_status():
+    """Obtener estado detallado de la configuración de AD"""
+    if not AD_AVAILABLE or not ad_service:
+        return {
+            "status": "unavailable",
+            "error": "Active Directory service not available"
+        }
     
-    # Verificar conexión AD
-    if not ad_service.test_connection():
-        return templates.TemplateResponse(
-            "users/ad_search.html",
-            {
-                "request": request,
-                "error": "No se pudo conectar a Active Directory. Verifique la configuración."
-            }
-        )
+    try:
+        return ad_service.get_config_status()
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+@router.get("/ad-debug", response_class=HTMLResponse)
+async def ad_debug_page(request: Request):
+    """Página de diagnóstico de Active Directory"""
     
-    users = ad_service.search_users(search_term, max_results)
-    
-    # Incluir grupos si se solicita
-    if include_groups:
-        for user in users:
-            user['groups'] = ad_service.get_user_groups(user['username'])
+    if not AD_AVAILABLE or not ad_service:
+        config_status = {"status": "unavailable", "error": "AD service not available"}
+        connection_test = {"success": False, "error": "AD service not available"}
+    else:
+        try:
+            config_status = ad_service.get_config_status()
+            connection_test = ad_service.test_connection()
+        except Exception as e:
+            config_status = {"status": "error", "error": str(e)}
+            connection_test = {"success": False, "error": str(e)}
     
     return templates.TemplateResponse(
-        "users/ad_results.html",
+        "users/ad_debug.html",
         {
             "request": request,
-            "users": users,
-            "search_term": search_term,
-            "include_groups": include_groups,
-            "total_results": len(users)
+            "config_status": config_status,
+            "connection_test": connection_test,
+            "ad_available": AD_AVAILABLE
         }
     )
 
 @router.get("/ad-user/{username}")
 async def view_ad_user(request: Request, username: str):
     """Ver detalles de un usuario de AD"""
-    user = ad_service.get_user_by_username(username)
     
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado en Active Directory")
+    if not AD_AVAILABLE or not ad_service:
+        raise HTTPException(status_code=503, detail="Active Directory service not available")
     
-    # Obtener grupos del usuario
-    user['groups'] = ad_service.get_user_groups(username)
-    
-    return templates.TemplateResponse(
-        "users/ad_detail.html",
-        {"request": request, "user": user}
-    )
-
-@router.post("/import-from-ad")
-async def import_user_from_ad(
-    username: str = Form(...),
-    department_id: int = Form(...),
-    db: Session = Depends(get_db)
-):
-    """Importar usuario desde AD a la base local"""
-    
-    # Buscar usuario en AD
-    ad_user = ad_service.get_user_by_username(username)
-    if not ad_user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado en Active Directory")
-    
-    # Verificar si ya existe en la base local
-    existing_user = db.query(models.User).filter(
-        models.User.email == ad_user['email']
-    ).first()
-    
-    if existing_user:
-        raise HTTPException(status_code=400, detail="El usuario ya existe en la base local")
-    
-    # Crear usuario en base local
-    user_data = schemas.UserCreate(
-        email=ad_user['email'] or f"{username}@{ad_user['company']}.com",
-        full_name=ad_user['display_name'] or f"{ad_user['first_name']} {ad_user['last_name']}",
-        department_id=department_id
-    )
-    
-    crud.create_user(db, user_data)
-    return RedirectResponse(url="/users", status_code=302)
-
-@router.get("/export")
-async def export_users_form(request: Request):
-    """Formulario para exportar usuarios"""
-    return templates.TemplateResponse(
-        "users/export.html",
-        {"request": request}
-    )
-
-@router.post("/export")
-async def export_users(
-    format: str = Form(...),
-    source: str = Form("local"),
-    search_term: str = Form(""),
-    include_groups: bool = Form(False),
-    db: Session = Depends(get_db)
-):
-    """Exportar usuarios en diferentes formatos"""
-    
-    if source == "ad":
-        # Exportar desde Active Directory
-        users = ad_service.search_users(search_term, max_results=1000)
-        
-        if include_groups:
-            for user in users:
-                user['groups'] = ', '.join(ad_service.get_user_groups(user['username']))
-        
-        data = users
-        filename_prefix = "usuarios_ad"
-    
-    else:
-        # Exportar desde base local
-        users = crud.get_users(db)
-        if search_term:
-            users = [u for u in users if search_term.lower() in u.full_name.lower() or search_term.lower() in u.email.lower()]
-        
-        # Convertir a diccionarios
-        data = []
-        for user in users:
-            user_dict = {
-                'id': user.id,
-                'full_name': user.full_name,
-                'email': user.email,
-                'department': user.department.name if user.department else '',
-                'company': user.department.company.name if user.department else '',
-                'created_at': user.created_at
-            }
-            data.append(user_dict)
-        
-        filename_prefix = "usuarios_local"
-    
-    # Generar export según formato
-    if format == "excel":
-        buffer = export_service.export_to_excel(data)
-        filename = f"{filename_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        
-        return StreamingResponse(
-            io.BytesIO(buffer.read()),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    
-    elif format == "csv":
-        csv_data = export_service.export_to_csv(data)
-        filename = f"{filename_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        
-        return StreamingResponse(
-            io.StringIO(csv_data),
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    
-    elif format == "json":
-        json_data = export_service.export_to_json(data)
-        filename = f"{filename_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        
-        return StreamingResponse(
-            io.StringIO(json_data),
-            media_type="application/json",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    
-    else:
-        raise HTTPException(status_code=400, detail="Formato de exportación no válido")
-
-@router.get("/test-ad-connection")
-async def test_ad_connection():
-    """Probar conexión con Active Directory"""
     try:
-        connection_ok = ad_service.test_connection()
-        if connection_ok:
-            return {"status": "success", "message": "Conexión a Active Directory exitosa"}
-        else:
-            return {"status": "error", "message": "No se pudo conectar a Active Directory"}
+        user = ad_service.get_user_by_username(username)
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado en Active Directory")
+        
+        # Obtener grupos del usuario
+        user['groups'] = ad_service.get_user_groups(username)
+        
+        return templates.TemplateResponse(
+            "users/ad_detail.html",
+            {"request": request, "user": user}
+        )
     except Exception as e:
-        return {"status": "error", "message": f"Error: {str(e)}"}
+        raise HTTPException(status_code=500, detail=f"Error accessing AD user: {str(e)}")
 
 # Mantener las rutas originales para compatibilidad
 @router.get("/create", response_class=HTMLResponse)

@@ -36,12 +36,39 @@
     </div>
 </div>
 
+<!-- Mensajes de error -->
+<div class="row">
+    <div class="col-12">
+        {% if config_error %}
+        <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle"></i> Error de Configuración</h5>
+            {{ error }}
+            <hr>
+            <p class="mb-0">
+                <a href="/users/ad-debug" class="btn btn-warning">🔧 Diagnóstico de AD</a>
+                <a href="/users?source=local" class="btn btn-secondary">Ver Usuarios Locales</a>
+            </p>
+        </div>
+        {% elif search_error %}
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-circle"></i> Error de Búsqueda</h5>
+            {{ error }}
+            <hr>
+            <p class="mb-0">
+                <a href="/users/test-ad-connection" class="btn btn-info">🔍 Probar Conexión</a>
+                <a href="/users/ad-debug" class="btn btn-warning">🔧 Diagnóstico</a>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 <!-- Resultados -->
 <div class="row">
     <div class="col-12">
         {% if users %}
-        <div class="alert alert-info">
-            Se encontraron {{ users|length }} usuarios en Active Directory
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> Se encontraron {{ users|length }} usuarios en Active Directory
         </div>
         
         <div class="table-responsive">
@@ -161,5 +188,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
 {% endblock %}
