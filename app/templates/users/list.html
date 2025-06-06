@@ -1,0 +1,43 @@
+<!-- app/templates/users/list.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Usuarios</h1>
+        <a href="/users/create" class="btn btn-primary mb-3">Agregar Nuevo Usuario</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>Email</th>
+                    <th>Departamento</th>
+                    <th>Empresa</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.department.name if user.department else 'N/A' }}</td>
+                    <td>{{ user.department.company.name if user.department else 'N/A' }}</td>
+                    <td>
+                        <a href="/users/{{ user.id }}" class="btn btn-sm btn-info">Ver</a>
+                        <a href="/users/{{ user.id }}/edit" class="btn btn-sm btn-warning">Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

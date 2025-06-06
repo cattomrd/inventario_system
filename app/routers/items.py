@@ -9,7 +9,7 @@ from models import crud, models, schemas
 from models.database import get_db
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="../app/templates")
 
 @router.get("/")
 async def list_items(request: Request, db: Session = Depends(get_db)):

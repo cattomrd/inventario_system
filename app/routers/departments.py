@@ -1,12 +1,24 @@
 # app/routers/departments.py
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+
 from sqlalchemy.orm import Session
 
 from models import crud, models, schemas
 from models.database import get_db
 
 router = APIRouter()
+templates = Jinja2Templates(directory="../app/templates")
+
+@router.get("/")
+async def list_departaments(request: Request, db: Session = Depends(get_db)):
+    companies = crud.get_departaments(db)
+    return templates.TemplateResponse(
+        "departaments/list.html",
+        {"request": request, "companies": companies}
+    )
+
 
 @router.post("/create")
 async def create_department(
@@ -40,3 +52,4 @@ async def delete_department(department_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return RedirectResponse(url=f"/companies/{company_id}", status_code=302)
+

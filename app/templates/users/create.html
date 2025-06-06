@@ -1,0 +1,35 @@
+<!-- app/templates/users/create.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <h1>Registrar Nuevo Usuario</h1>
+        
+        <form method="POST" action="/users/create">
+            <div class="mb-3">
+                <label for="full_name" class="form-label">Nombre Completo</label>
+                <input type="text" class="form-control" id="full_name" name="full_name" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="department_id" class="form-label">Departamento</label>
+                <select class="form-select" id="department_id" name="department_id" required>
+                    <option value="">Seleccione un departamento</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }} - {{ dept.company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="/users" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+<!-- app/templates/assignments/list.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Asignaciones Activas</h1>
+        <a href="/assignments/create" class="btn btn-primary mb-3">Nueva Asignación</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ítem</th>
+                    <th>Usuario</th>
+                    <th>Fecha Asignación</th>
+                    <th>Notas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assignment in assignments %}
+                <tr>
+                    <td>{{ assignment.id }}</td>
+                    <td>{{ assignment.item.brand }} {{ assignment.item.model }} ({{ assignment.item.serial_number }})</td>
+                    <td>{{ assignment.user.full_name }}</td>
+                    <td>{{ assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ assignment.notes or '-' }}</td>
+                    <td>
+                        <form method="POST" action="/assignments/{{ assignment.id }}/return" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-warning" 
+                                    onclick="return confirm('¿Está seguro de devolver este equipo?')">
+                                Devolver
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

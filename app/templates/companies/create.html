@@ -1,0 +1,46 @@
+<!-- app/templates/assignments/create.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <h1>Nueva Asignación de Equipo</h1>
+        
+        <form method="POST" action="/assignments/create">
+            <div class="mb-3">
+                <label for="item_id" class="form-label">Ítem</label>
+                <select class="form-select" id="item_id" name="item_id" required>
+                    <option value="">Seleccione un ítem</option>
+                    {% for item in available_items %}
+                    <option value="{{ item.id }}">
+                        {{ item.brand }} {{ item.model }} - {{ item.serial_number }}
+                        ({{ item.location.name if item.location else 'Sin ubicación' }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="user_id" class="form-label">Usuario</label>
+                <select class="form-select" id="user_id" name="user_id" required>
+                    <option value="">Seleccione un usuario</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">
+                        {{ user.full_name }} - {{ user.department.name if user.department else 'Sin departamento' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notas (opcional)</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Asignar</button>
+            <a href="/assignments" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
